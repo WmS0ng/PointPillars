@@ -7,3 +7,6 @@ tmp/
 results/
 *.sh
 .idea
+.vscode/
+downloads/
+datasets/

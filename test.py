@@ -1,15 +1,16 @@
 import argparse
+import os
+
 import cv2
 import numpy as np
-import os
 import torch
-import pdb
 
-from pointpillars.utils import setup_seed, read_points, read_calib, read_label, \
-    keep_bbox_from_image_range, keep_bbox_from_lidar_range, vis_pc, \
-    vis_img_3d, bbox3d2corners_camera, points_camera2image, \
-    bbox_camera2lidar
 from pointpillars.model import PointPillars
+from pointpillars.utils import (bbox3d2corners_camera, bbox_camera2lidar,
+                                keep_bbox_from_image_range,
+                                keep_bbox_from_lidar_range,
+                                points_camera2image, read_calib, read_label,
+                                read_points, vis_img_3d, vis_pc)
 
 
 def point_range_filter(pts, point_range=[0, -39.68, -3, 69.12, 39.68, 1]):
