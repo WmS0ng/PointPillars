@@ -4,7 +4,7 @@ import math
 import os
 
 
-def convert_sustech_to_kitti(json_path, output_path, calib_file=None):
+def label2kitti(json_path, output_path, calib_file=None):
     """
     将 SUSTechPOINTS JSON 标注转换为 KITTI 格式 .txt 文件
 
@@ -66,12 +66,12 @@ def batch_convert(input_dir, output_dir):
     for json_file in sorted(json_files):
         basename = os.path.basename(json_file).replace(".json", ".txt")
         output_path = os.path.join(output_dir, basename)
-        convert_sustech_to_kitti(json_file, output_path)
+        label2kitti(json_file, output_path)
 
 
 if __name__ == "__main__":
     # 单个文件转换
-    # convert_sustech_to_kitti("0000.json", "0000.txt")
+    # label2kitti("0000.json", "0000.txt")
 
     # 批量转换
-    batch_convert("./datasets/test_data/label", "./datasets/test_data/label_kitti")
+    batch_convert("./datasets/test_data/label", "./datasets/test_data/label_2")
