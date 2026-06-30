@@ -1,34 +1,45 @@
+import os
+
 import cv2
 import numpy as np
 import open3d as o3d
-import os
-from pointpillars.utils import bbox3d2corners
 
+from pointpillars.utils import bbox3d2corners
 
 COLORS = [[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0]]
 COLORS_IMG = [[0, 0, 255], [0, 255, 0], [255, 0, 0], [0, 255, 255]]
 
 LINES = [
-        [0, 1],
-        [1, 2], 
-        [2, 3],
-        [3, 0],
-        [4, 5],
-        [5, 6],
-        [6, 7],
-        [7, 4],
-        [2, 6],
-        [7, 3],
-        [1, 5],
-        [4, 0]
-    ]
+    [0, 1],
+    [1, 2],
+    [2, 3],
+    [3, 0],
+    [4, 5],
+    [5, 6],
+    [6, 7],
+    [7, 4],
+    [2, 6],
+    [7, 3],
+    [1, 5],
+    [4, 0],
+]
 
 
 def npy2ply(npy):
     ply = o3d.geometry.PointCloud()
     ply.points = o3d.utility.Vector3dVector(npy[:, :3])
-    density = npy[:, 3]
-    colors = [[item, item, item] for item in density]
+    intensity = npy[:, 3].astype(np.float32)
+    if intensity.size == 0:
+        colors = np.ones((0, 3), dtype=np.float32) * 0.8
+    else:
+        min_i = float(intensity.min())
+        max_i = float(intensity.max())
+        if max_i - min_i < 1e-3:
+            normalized = np.clip(intensity, 0.0, 1.0)
+        else:
+            normalized = (intensity - min_i) / (max_i - min_i)
+        normalized = 0.2 + 0.8 * np.clip(normalized, 0.0, 1.0)
+        colors = np.stack([normalized, normalized, normalized], axis=1)
     ply.colors = o3d.utility.Vector3dVector(colors)
     return ply
 
@@ -53,10 +64,16 @@ def vis_core(plys):
 
     PAR = os.path.dirname(os.path.abspath(__file__))
     ctr = vis.get_view_control()
-    param = o3d.io.read_pinhole_camera_parameters(os.path.join(PAR, 'viewpoint.json'))
+    param = o3d.io.read_pinhole_camera_parameters(os.path.join(PAR, "viewpoint.json"))
     for ply in plys:
         vis.add_geometry(ply)
     ctr.convert_from_pinhole_camera_parameters(param)
+
+    opt = vis.get_render_option()
+    opt.point_size = 4.0
+    opt.line_width = 2.0
+    opt.background_color = np.array([0.05, 0.05, 0.05])
+    opt.show_coordinate_frame = False
 
     vis.run()
     # param = vis.get_view_control().convert_to_pinhole_camera_parameters()
@@ -65,24 +82,25 @@ def vis_core(plys):
 
 
 def vis_pc(pc, bboxes=None, labels=None):
-    '''
+    """
     pc: ply or np.ndarray (N, 4)
     bboxes: np.ndarray, (n, 7) or (n, 8, 3)
     labels: (n, )
-    '''
+    """
     if isinstance(pc, np.ndarray):
         pc = npy2ply(pc)
-    
+
     mesh_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
-    size=10, origin=[0, 0, 0])
+        size=5, origin=[0, 0, 0]
+    )
 
     if bboxes is None:
         vis_core([pc, mesh_frame])
         return
-    
+
     if len(bboxes.shape) == 2:
         bboxes = bbox3d2corners(bboxes)
-    
+
     vis_objs = [pc, mesh_frame]
     for i in range(len(bboxes)):
         bbox = bboxes[i]
@@ -98,15 +116,15 @@ def vis_pc(pc, bboxes=None, labels=None):
 
 
 def vis_img_3d(img, image_points, labels, rt=True):
-    '''
+    """
     img: (h, w, 3)
     image_points: (n, 8, 2)
     labels: (n, )
-    '''
+    """
 
     for i in range(len(image_points)):
         label = labels[i]
-        bbox_points = image_points[i] # (8, 2)
+        bbox_points = image_points[i]  # (8, 2)
         if label >= 0 and label < 3:
             color = COLORS_IMG[label]
         else:
@@ -118,5 +136,5 @@ def vis_img_3d(img, image_points, labels, rt=True):
             cv2.line(img, (x1, y1), (x2, y2), color, 1)
     if rt:
         return img
-    cv2.imshow('bbox', img)
+    cv2.imshow("bbox", img)
     cv2.waitKey(0)
